@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ScrollReveal from '../components/ScrollReveal';
 import RippleButton from '../components/RippleButton';
-
-const doctors = [
-  { name: 'Dr. Maya Chen', role: 'Cardiology', notes: 'Specialist in preventive heart care.' },
-  { name: 'Dr. Imran Patel', role: 'Pediatrics', notes: 'Compassionate care for growing families.' },
-  { name: 'Dr. Sara Gomez', role: 'Nutrition', notes: 'Personalized meal planning and wellness support.' }
-];
 
 const services = [
   { title: 'Same-Day Consults', desc: 'Book flexible appointments for urgent concerns.' },
@@ -64,6 +58,26 @@ function Counter({ end, label }) {
 }
 
 function HomePage() {
+  const [featuredDocs, setFeaturedDocs] = useState([]);
+  const [loadingDocs, setLoadingDocs] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const res = await fetch('/api/doctors');
+        const data = await res.json();
+        // Take first 3 doctors as featured
+        setFeaturedDocs(data.slice(0, 3));
+      } catch (err) {
+        console.error('Error fetching featured doctors:', err);
+      } finally {
+        setLoadingDocs(false);
+      }
+    };
+    fetchFeatured();
+  }, []);
+
   return (
     <>
       <section className="hero">
@@ -71,11 +85,15 @@ function HomePage() {
           <p className="muted">Trusted care, modern guidance</p>
           <h1>Better health starts with a caring digital experience.</h1>
           <p>
-            Discover expert doctors, access practical wellness advice, and stay informed with a modern health blog built for everyday life.
+            Discover expert doctors, access practical wellness advice, buy daily health essentials, and schedule lab diagnostics all in one unified portal.
           </p>
           <div className="hero-actions">
-            <RippleButton onClick={() => window.location.assign('/blog')} variant="primary">Explore Blog</RippleButton>
-            <RippleButton onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} variant="secondary">View Services</RippleButton>
+            <RippleButton onClick={() => navigate('/blog')} variant="primary">
+              Explore Blog
+            </RippleButton>
+            <RippleButton onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} variant="secondary">
+              View Services
+            </RippleButton>
           </div>
         </ScrollReveal>
 
@@ -101,25 +119,43 @@ function HomePage() {
         </div>
       </section>
 
+      {/* Featured Doctors */}
       <ScrollReveal className="section">
         <div className="section-header">
           <h2 className="section-title">Featured Doctors</h2>
-          <span className="muted">Meet the experts behind your care</span>
+          <Link to="/doctors" className="see-all-link">
+            See All Doctors →
+          </Link>
         </div>
-        <div className="card-grid">
-          {doctors.map((doctor) => (
-            <article key={doctor.name} className="card">
-              <div className="doctor-badge">
-                <div className="avatar">{doctor.name.split(' ').map((word) => word[0]).join('')}</div>
-                <div>
-                  <strong>{doctor.name}</strong>
-                  <div className="muted">{doctor.role}</div>
+        
+        {loadingDocs ? (
+          <div className="loading-state">Loading featured specialists...</div>
+        ) : (
+          <div className="card-grid">
+            {featuredDocs.map((doctor) => (
+              <article key={doctor.id || doctor._id} className="card doctor-home-card zoom-card">
+                <div className="doctor-badge">
+                  <div className="avatar">
+                    {doctor.name.split(' ').map((word) => word[0]).join('').slice(0, 2)}
+                  </div>
+                  <div>
+                    <strong>{doctor.name}</strong>
+                    <div className="muted">{doctor.role}</div>
+                  </div>
                 </div>
-              </div>
-              <p>{doctor.notes}</p>
-            </article>
-          ))}
-        </div>
+                <p className="doctor-notes-excerpt">{doctor.notes}</p>
+                <div className="doctor-home-footer">
+                  <Link to={`/doctors/${doctor.id || doctor._id}`} className="doc-profile-link">
+                    View Profile
+                  </Link>
+                  <Link to={`/book-appointment/${doctor.id || doctor._id}`} className="doc-book-link">
+                    Book Slot
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </ScrollReveal>
 
       <ScrollReveal className="section" id="services">
@@ -129,7 +165,7 @@ function HomePage() {
         </div>
         <div className="card-grid">
           {services.map((service) => (
-            <article key={service.title} className="card">
+            <article key={service.title} className="card zoom-card">
               <h3>{service.title}</h3>
               <p>{service.desc}</p>
             </article>
@@ -174,8 +210,12 @@ function HomePage() {
             <p className="muted">Browse our blog for practical advice or book a consultation today.</p>
           </div>
           <div className="hero-actions">
-            <RippleButton onClick={() => window.location.assign('/blog')} variant="primary">Read Our Blog</RippleButton>
-            <RippleButton onClick={() => window.location.assign('/')} variant="secondary">Book a Visit</RippleButton>
+            <RippleButton onClick={() => navigate('/blog')} variant="primary">
+              Read Our Blog
+            </RippleButton>
+            <RippleButton onClick={() => navigate('/doctors')} variant="secondary">
+              Book a Visit
+            </RippleButton>
           </div>
         </div>
       </ScrollReveal>
